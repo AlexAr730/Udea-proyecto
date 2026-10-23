@@ -1,0 +1,25 @@
+# ParaBank local para pruebas automatizadas.
+#
+# La base de datos de la imagen vive en memoria dentro del contenedor:
+# al recrear el contenedor los datos se pierden (lo cual es deseable para tests).
+#
+# Uso:
+#   docker compose up -d          # levantar
+#   docker compose down           # apagar y borrar el estado
+#
+# Nota: la imagen no incluye curl ni wget, por eso el healthcheck usa /dev/tcp
+# con bash. La comprobación HTTP real la hace scripts/parabank-up.sh desde el host.
+
+services:
+  parabank:
+    image: parasoft/parabank:latest
+    container_name: parabank
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 15s
