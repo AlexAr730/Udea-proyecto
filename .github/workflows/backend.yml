@@ -1,0 +1,51 @@
+name: Backend Karate
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: backend-karate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  karate:
+    name: Suite Karate (local)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Levantar ParaBank
+        env:
+          PARABANK_TIMEOUT: 180
+        run: ./scripts/parabank-up.sh
+
+      - name: Ejecutar suite
+        run: mvn -B test
+
+      - name: Publicar reportes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: karate-reports
+          path: |
+            target/karate-reports/
+            target/cucumber-html-reports/
+            target/surefire-reports/
+          if-no-files-found: warn
+
+      - name: Logs del contenedor (si falla)
+        if: failure()
+        run: docker compose logs --tail=100 parabank
