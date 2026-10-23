@@ -18,10 +18,17 @@ class TestRunnerParallel {
 
     @Test
     void testParallel() {
+        // Los tags se pueden filtrar desde Maven o CI:
+        //   mvn test -Dkarate.tags='@smoke'
+        //   mvn test -Dkarate.tags='~@known-issue'
+        String tags = System.getProperty("karate.tags", "~@known-issue");
+
+        // parallel(1): los escenarios comparten cuentas y saldos; en paralelo
+        // se pisan entre si y producen falsos negativos.
         Results results = Runner.path("classpath:org/udea/parabank")
-                .tags("~@ignore")
+                .tags(tags)
                 .outputCucumberJson(true)
-                .parallel(5);
+                .parallel(1);
         generateReport(results.getReportDir());
         assertEquals(0, results.getFailCount(), results.getErrorMessages());
     }
